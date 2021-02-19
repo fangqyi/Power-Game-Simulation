@@ -47,15 +47,15 @@ class BruteForceSimulation(Simulation):
                         # find p* and q*
                         p_star_idx = idx
                         q_star_idx = idx
-                        comp_p_ap = raw_action_profiles[idx][:][0]
+                        comp_p_ap = copy.deepcopy(raw_action_profiles[idx][:][0])
                         comp_p_ap[j] = np.zeros(comp_p_ap[j].shape)
-                        comp_q_ap = raw_action_profiles[idx][:][1]
+                        comp_q_ap = copy.deepcopy(raw_action_profiles[idx][:][1])
                         comp_q_ap[i] = np.zeros(comp_q_ap[i].shape)
 
                         for idx_t in range(total_action_profiles):
-                            temp_p_ap = raw_action_profiles[idx_t][:][0]
+                            temp_p_ap = copy.deepcopy(raw_action_profiles[idx_t][:][0])
                             temp_p_ap[j] = np.zeros(temp_p_ap[j].shape)
-                            temp_q_ap = raw_action_profiles[idx_t][:][1]
+                            temp_q_ap = copy.deepcopy(raw_action_profiles[idx_t][:][1])
                             temp_q_ap[i] = np.zeros(temp_q_ap[i].shape)
                             if np.array_equal(temp_p_ap, comp_p_ap) and rewards[p_star_idx][j] < rewards[idx_t][j]:
                                 p_star_idx = idx_t
@@ -70,6 +70,7 @@ class BruteForceSimulation(Simulation):
                     if not flag:
                         break
                 if flag:
+                    #print(raw_action_profiles[idx])
                     equilibriums.append((raw_action_profiles[idx],
                                          np.sum(rewards[idx], axis=0),
                                          np.sum(game_rewards[idx], axis=0)))
