@@ -22,7 +22,6 @@ class BruteForceSimulation(Simulation):
         super().__init__(n_players, game, protocol)
 
     def compute_equilibrium(self):
-
         equilibriums = []
         num_edge_weights = self.protocol.num_edge_weights
         raw_action_profiles = self.get_all_reduced_action_profiles()
@@ -43,18 +42,25 @@ class BruteForceSimulation(Simulation):
         if num_edge_weights == 2:
             for idx in range(total_action_profiles):
                 flag = True
-                for i in self.n_players:
-                    for j in self.n_players:
+                for i in range(self.n_players):
+                    for j in range(self.n_players):
                         # find p* and q*
-                        p_star_idx = 0
-                        q_star_idx = 0
-                        interval = (2 ** self.n_players) ** (num_edge_weights * self.n_players - 1)
-                        mod = idx % interval
-                        for x in range(0, 2 ** self.n_players):
-                            if rewards[p_star_idx][j] <= rewards[interval * x + mod][j]:
-                                p_star_idx = interval * x + mod
-                            if rewards[q_star_idx][i] <= rewards[interval * x + mod][i]:
-                                q_star_idx = interval * x + mod
+                        p_star_idx = idx
+                        q_star_idx = idx
+                        comp_p_ap = raw_action_profiles[idx][:][0]
+                        comp_p_ap[j] = np.zeros(comp_p_ap[j].shape)
+                        comp_q_ap = raw_action_profiles[idx][:][1]
+                        comp_q_ap[i] = np.zeros(comp_q_ap[i].shape)
+
+                        for idx_t in range(total_action_profiles):
+                            temp_p_ap = raw_action_profiles[idx_t][:][0]
+                            temp_p_ap[j] = np.zeros(temp_p_ap[j].shape)
+                            temp_q_ap = raw_action_profiles[idx_t][:][1]
+                            temp_q_ap[i] = np.zeros(temp_q_ap[i].shape)
+                            if np.array_equal(temp_p_ap, comp_p_ap) and rewards[p_star_idx][j] < rewards[idx_t][j]:
+                                p_star_idx = idx_t
+                            if np.array_equal(temp_q_ap, comp_q_ap) and rewards[q_star_idx][i] < rewards[idx_t][i]:
+                                q_star_idx = idx_t
                         if raw_action_profiles[p_star_idx][j][0][i] != raw_action_profiles[idx][j][0][i]:
                             flag = False
                             break
@@ -70,21 +76,28 @@ class BruteForceSimulation(Simulation):
         elif num_edge_weights == 1:
             for idx in range(total_action_profiles):
                 flag = True
-                for i in self.n_players:
+
+                for i in range(self.n_players):
                     # find p* or q*
-                    star_idx = 0
-                    interval = (2 ** self.n_players) ** (self.n_players - 1)
-                    mod = idx % interval
-                    for x in range(0, 2 ** self.n_players):
-                        if rewards[star_idx][i] <= rewards[interval * x + mod][i]:
-                            star_idx = interval * x + mod
-                    if star_idx != idx:
-                        flag = False
+                    star_idx = idx
+                    comp_ap = copy.deepcopy(raw_action_profiles[idx])
+                    comp_ap[i] = np.zeros(comp_ap[i].shape)
+                    for idx_t in range(total_action_profiles):
+                        temp_ap = copy.deepcopy(raw_action_profiles[idx_t])
+                        temp_ap[i] = np.zeros(temp_ap[i].shape)
+                        if np.array_equal(temp_ap, comp_ap) and rewards[star_idx][i] < rewards[idx_t][i]:
+                            star_idx = idx_t
+                    for j in range(self.n_players):
+                        if raw_action_profiles[star_idx][i][0][j] != raw_action_profiles[idx][i][0][j]:
+                            flag = False
+                            break
+                    if not flag:
                         break
                 if flag:
                     equilibriums.append((raw_action_profiles[idx],
                                          np.sum(rewards[idx], axis=0),
                                          np.sum(game_rewards[idx], axis=0)))
+
         return equilibriums
 
     def get_all_reduced_action_profiles(self):
@@ -101,11 +114,8 @@ class BruteForceSimulation(Simulation):
             return bin_list
 
         num_edge_weights = self.protocol.num_edge_weights
-        actions = [_dec_to_action_list(dec) for dec in list(range(0, 2 ** self.n_players))]
-        all_action_profiles = list(product(actions, actions)) if num_edge_weights is 2 else actions
-        ret = copy.deepcopy(all_action_profiles)
-        for _ in range(self.n_players - 1):
-            ret = list(product(ret, all_action_profiles))
+        actions = [_dec_to_action_list(dec) for dec in list(range(1, 2 ** self.n_players))]
+        all_action_profiles = list(product(actions, repeat=num_edge_weights))
+        ret = list(product(all_action_profiles, repeat=self.n_players))
         return np.array(ret)
         # [num_action_profiles, num_players, num_edge_weights, num_players]
-

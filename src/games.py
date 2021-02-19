@@ -43,10 +43,10 @@ class PseudoGame(Game):
     def compute_game_rewards(self, actions_profile):
         def calc_distance(x, y):
             return np.abs(x-y)
-        return np.sum(1 - calc_distance(actions_profile, self.orders), axis=1)
+        return np.mean(1 - calc_distance(actions_profile, self.orders), axis=1)
 
     def _generate_order_matrix(self, orders):
-        o = np.zeros(self.n_players, self.n_players)
+        o = np.zeros((self.n_players, self.n_players))
         for (x, y) in orders:
             o[x][y] = 1
         for i in range(self.n_players):
